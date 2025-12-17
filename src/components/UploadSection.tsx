@@ -1,8 +1,12 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, X } from "lucide-react";
+import { Upload, FileText, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface UploadSectionProps {
   title: string;
@@ -11,6 +15,24 @@ interface UploadSectionProps {
   onChange: (value: string) => void;
   icon: React.ReactNode;
   mode?: "both" | "paste" | "upload";
+}
+
+async function extractTextFromPDF(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  
+  let fullText = "";
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item: any) => item.str)
+      .join(" ");
+    fullText += pageText + "\n\n";
+  }
+  
+  return fullText.trim();
 }
 
 export function UploadSection({
@@ -38,15 +60,14 @@ export function UploadSection({
         const text = await file.text();
         onChange(text);
       } 
-      // For PDF files, we'll extract text client-side using a simple approach
-      // In production, you'd use a proper PDF library or backend service
+      // For PDF files, extract text using PDF.js
       else if (file.type === "application/pdf") {
-        // Read as base64 for display, but prompt user to paste text
-        const reader = new FileReader();
-        reader.onload = () => {
-          onChange(`[PDF File: ${file.name}]\n\nNote: PDF parsing is limited in browser. For best results, please copy and paste the text content from your PDF below:\n\n`);
-        };
-        reader.readAsDataURL(file);
+        const extractedText = await extractTextFromPDF(file);
+        if (extractedText.trim()) {
+          onChange(extractedText);
+        } else {
+          onChange(`[PDF File: ${file.name}]\n\nNote: Could not extract text from PDF. The PDF may be image-based. Please copy and paste the text content manually.`);
+        }
       }
       // For Word docs
       else if (file.name.endsWith(".doc") || file.name.endsWith(".docx")) {
@@ -89,13 +110,22 @@ export function UploadSection({
           className="w-full h-[200px] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all duration-200 group"
           disabled={isLoading}
         >
-          <div className="p-4 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
-            <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
-          </div>
-          <div className="text-center">
-            <p className="font-medium text-foreground">Drop file here or click to upload</p>
-            <p className="text-sm text-muted-foreground mt-1">Supports TXT, PDF, DOC, DOCX</p>
-          </div>
+          {isLoading ? (
+            <>
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="font-medium text-foreground">Extracting text from PDF...</p>
+            </>
+          ) : (
+            <>
+              <div className="p-4 rounded-full bg-muted group-hover:bg-primary/10 transition-colors">
+                <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <div className="text-center">
+                <p className="font-medium text-foreground">Drop file here or click to upload</p>
+                <p className="text-sm text-muted-foreground mt-1">Supports TXT, PDF, DOC, DOCX</p>
+              </div>
+            </>
+          )}
         </button>
       ) : (
         <div className="h-[200px] border border-border rounded-lg p-4 flex flex-col">
