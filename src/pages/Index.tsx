@@ -104,32 +104,25 @@ const Index = () => {
               <Card className="p-6 shadow-lg border-0 gradient-card animate-slide-up" style={{ animationDelay: "0.1s" }}>
                 <UploadSection
                   title="Job Description"
-                  placeholder="Paste the job description here or upload a file...
+                  placeholder="Paste the job description here...
 
 Example:
 We are looking for a Senior Software Engineer with 5+ years of experience in React, TypeScript, and Node.js. The ideal candidate should have experience with cloud services (AWS/GCP), CI/CD pipelines, and agile methodologies..."
                   value={jobDescription}
                   onChange={setJobDescription}
                   icon={<Briefcase className="w-5 h-5" />}
+                  mode="paste"
                 />
               </Card>
 
               <Card className="p-6 shadow-lg border-0 gradient-card animate-slide-up" style={{ animationDelay: "0.2s" }}>
                 <UploadSection
                   title="Resume / CV"
-                  placeholder="Paste the candidate's resume here or upload a file...
-
-Example:
-John Doe
-Senior Software Engineer
-
-Experience:
-- 6 years of full-stack development
-- Proficient in React, TypeScript, Python
-- Led team of 5 engineers..."
+                  placeholder="Upload the candidate's resume file..."
                   value={resume}
                   onChange={setResume}
                   icon={<FileText className="w-5 h-5" />}
+                  mode="upload"
                 />
               </Card>
             </div>
